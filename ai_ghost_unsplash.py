@@ -10,26 +10,27 @@ import tempfile
 import os
 
 # OPENAI keys
-client = OpenAI() 
+client = OpenAI() # openai client instance
 client.api_key = "YOUR CHATGPT KEY"  # YOUR CHATGPT API KEY 
 
 # Unsplash API keys
-client_id = "YOUR CLIENT ID" 
-client_secret = "YOUR CLIENT SECRET"
-redirect_uri = "YOUR REDIRECT URI"
+client_id = "YOUR CLIENT ID" # this is Access Key from your app's settings in your Unsplash profile (I also wrote this in README)
+client_secret = "YOUR CLIENT SECRET" # this is Secret key from your app's settings in your Unsplash profile
+redirect_uri = "YOUR REDIRECT URI" # this is Redirect URI from Redirect URI & Permissions section
+
 
 # Ghost API keys
-ghost_instance_name = 'play_ghost'
-ghost_url = 'YOUR GHOST INSTANCE'
-AdminAPIKey = 'YOUR AdminAPIKey'
+ghost_instance_name = 'play_ghost' # you can name it how do you like
+ghost_url = 'YOUR GHOST INSTANCE' # this is URL of your Ghost website
+AdminAPIKey = 'YOUR AdminAPIKey' # keys from 'Integrations' tab in settings of your Ghost admin
 ContentAPIKey = 'YOUR ContentAPIKey'
 
 # prompts for LLM
-prompt_text = "generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs"
+prompt_text = "generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs" # prompt for generating news article in markdown 
 prompt_unsplash = 'reduce this sentence to four words' # propmpt for generating query for image search using name of the article
 prompt_tag = 'generate one news category for this news article in one word' # prompt for generating news category
 words_check = ['your', '[', 'lorem']   # forbidden words -> this helps to find articles that don't contain stuff like [author's name], 'lorem ipsum...' etc.
-
+min_tokens = 200 # minimum number of tokens that answer from AI should contain
 
 class GhostAdmin():
     def __init__(self, siteName):
@@ -164,12 +165,12 @@ def delete_all_files_from_temp(temp_dir):
 if __name__ == '__main__':
    # GENERATING THE NEWS ARTICLE
   generated_text = answer_from_AI(prompt_text)
-  print(f'text: {generated_text[:200]}')
+#   print(f'text: {generated_text[:200]}')
 
   bad_response = False  
 
-  if len(generated_text.split()) < 200:             # CHECKING FOR VALID AI RESPONSE
-      print('sorry, less than 200 tokens')
+  if len(generated_text.split()) < min_tokens:             # CHECKING FOR VALID AI RESPONSE
+    print(f'sorry, less than {min_tokens} tokens')
   else:
       ignore_case_text = generated_text.lower()
       for word in words_check:
@@ -209,7 +210,7 @@ if __name__ == '__main__':
         print(f'tag for article: {tag}')
         post_tags = [{'name': tag }]
 
-        ga = GhostAdmin('play_ghost')	# your Ghost instance
+        ga = GhostAdmin(ghost_instance_name)	# your Ghost instance
         image_object = ga.loadImage(output_filename) # loading image to Ghost
         result = ga.imageUpload(imageName=image_name, imageObject=image_object)
 
