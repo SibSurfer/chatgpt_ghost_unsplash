@@ -11,18 +11,18 @@ import os
 
 # OPENAI keys
 client = OpenAI() 
-client.api_key = ""  # YOUR CHATGPT API KEY 
+client.api_key = "YOUR CHATGPT KEY"  # YOUR CHATGPT API KEY 
 
 # Unsplash API keys
-client_id = "lTmdfvlpxj88X29uUF01kPAfTfeHqcn19LSsXyZ7SFg" 
-client_secret = "6gQ-qkXKxNLVCOAVN_CtF_ePFTPbW1tG-XT8WzEgrE8"
-redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+client_id = "YOUR CLIENT ID" 
+client_secret = "YOUR CLIENT SECRET"
+redirect_uri = "YOUR REDIRECT URI"
 
 # Ghost API keys
 ghost_instance_name = 'play_ghost'
-ghost_url = 'https://play-ghost.intra.nocloud.today/'
-AdminAPIKey = ''
-ContentAPIKey = ''
+ghost_url = 'YOUR GHOST INSTANCE'
+AdminAPIKey = 'YOUR AdminAPIKey'
+ContentAPIKey = 'YOUR ContentAPIKey'
 
 # prompts for LLM
 prompt_text = "generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs"
