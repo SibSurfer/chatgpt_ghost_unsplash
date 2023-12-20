@@ -180,62 +180,64 @@ if __name__ == '__main__':
               break
       if not bad_response:
         title_idx = 0
+        found_article = False
         lines = generated_text.split('\n')
         for line in lines:
             title_idx += 1
             if line.startswith('#'):        # finding the line with title
                     article_name = line.replace('#', '').replace('*','').replace('Title', '').replace('title', '').strip() # sometimes there are symbols like '#', '*' and 'title' word in article name
+                    found_article = True
                     break
-            else:
-                article_name = lines[0].replace('#', '').replace('*','').replace('Title', '').replace('title', '').strip() 
-                break
-        generated_body = '\n'.join(lines[title_idx:]) # body of the article shouln't contain its title
-        excerpt = str(lines[title_idx + 1].split('.')[0])
+        if found_article == False:
+            print('sorry, your LLM generated markdown text without title')
+        else:
+            generated_body = '\n'.join(lines[title_idx:]) # body of the article shouln't contain its title
+            excerpt = str(lines[title_idx + 1].split('.')[0])
 
-        print(f"title: {article_name}")
+            print(f"title: {article_name}")
 
-        # GENERATING QUERY FOR UNSPLASH API 
-        query = answer_from_AI(prompt_unsplash + article_name)
-        print(f'query for unsplash search: {query}')
+            # GENERATING QUERY FOR UNSPLASH API 
+            query = answer_from_AI(prompt_unsplash + article_name)
+            print(f'query for unsplash search: {query}')
 
-        photo_id = unsplash_image_search(query)
+            photo_id = unsplash_image_search(query)
 
-        image_name = f'{random.randint(0,999)}.jpg'  # File name to save the downloaded photo
-        temp_dir = create_temp_directory()
-        output_filename = temp_dir + image_name
-        download_image_by_id(photo_id, output_filename)
+            image_name = f'{random.randint(0,999)}.jpg'  # File name to save the downloaded photo
+            temp_dir = create_temp_directory()
+            output_filename = temp_dir + image_name
+            download_image_by_id(photo_id, output_filename)
 
-        # GENERATING TAGS 
-        tag = answer_from_AI(prompt_tag + generated_body)
-        print(f'tag for article: {tag}')
-        post_tags = [{'name': tag }]
+            # GENERATING TAGS 
+            tag = answer_from_AI(prompt_tag + generated_body)
+            print(f'tag for article: {tag}')
+            post_tags = [{'name': tag }]
 
-        ga = GhostAdmin(ghost_instance_name)	# your Ghost instance
-        image_object = ga.loadImage(output_filename) # loading image to Ghost
-        result = ga.imageUpload(imageName=image_name, imageObject=image_object)
+            ga = GhostAdmin(ghost_instance_name)	# your Ghost instance
+            image_object = ga.loadImage(output_filename) # loading image to Ghost
+            result = ga.imageUpload(imageName=image_name, imageObject=image_object)
 
-        num_attempts = 0 # checking for result's validity
-        success = False
-        while num_attempts <= 3 and (result.status_code >= 500 or result.ok): # if it is server error, try again 3 times (if response is not error, continue)
-                num_attempts += 1
-                if result.ok: 
-                    image_url = json.loads(result.text)['images'][0]['url']  # image_url on Ghost server
-                    result = 'success: ' + image_url
-                    print(result)
-                    img_idx = image_url.find('content')
-                    image_slug = image_url[img_idx:]     # for POST request that creates a post, image URL should be like: content/images/year/month/image.jpg, so we should get rid of other words in URL
-                    create_post = ga.createPost(title=article_name, bodyFormat='markdown', excerpt=excerpt, tags=post_tags,body=generated_body, status='published', featureImage=image_slug)
-                    print(f'create_post result: {create_post}')
-                    success = True
-                    break
-                else: 
-                    error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
-                    print(error_str + '...trying again..')
-        if not success and result.status_code >= 500:
-            print('I have tryed 3 times, still is not working')
-        if not success and result.status_code < 500:
-            error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
-            print(error_str)
-        delete_all_files_from_temp(temp_dir)
+            num_attempts = 0 # checking for result's validity
+            success = False
+            while num_attempts <= 3 and (result.status_code >= 500 or result.ok): # if it is server error, try again 3 times (if response is not error, continue)
+                    num_attempts += 1
+                    if result.ok: 
+                        image_url = json.loads(result.text)['images'][0]['url']  # image_url on Ghost server
+                        result = 'success: ' + image_url
+                        print(result)
+                        img_idx = image_url.find('content')
+                        image_slug = image_url[img_idx:]     # for POST request that creates a post, image URL should be like: content/images/year/month/image.jpg, so we should get rid of other words in URL
+                        create_post = ga.createPost(title=article_name, bodyFormat='markdown', excerpt=excerpt, tags=post_tags,body=generated_body, status='published', featureImage=image_slug)
+                        print(f'create_post result: {create_post}')
+                        success = True
+                        break
+                    else: 
+                        error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
+                        print(error_str + '...trying again..')
+            if not success and result.status_code >= 500:
+                print('I have tryed 3 times, still is not working')
+            if not success and result.status_code < 500:
+                error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
+                print(error_str)
+            delete_all_files_from_temp(temp_dir)
                
 
