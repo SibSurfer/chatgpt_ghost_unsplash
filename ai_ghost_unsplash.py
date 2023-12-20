@@ -1,20 +1,35 @@
-from openai import OpenAI
+from openai import OpenAI # pip install openai
 import requests, json # pip install requests
 import jwt	# pip install pyjwt
 from datetime import datetime as dt
 from io import BytesIO  
-from unsplash.api import Api
+from unsplash.api import Api # pip install python-unsplash
 from unsplash.auth import Auth
 import random
 
-client = OpenAI()  # that's for AI API
-client.api_key = "YOUR CHATGPT API KEY"  # YOUR CHATGPT API KEY 
+# OPENAI keys
+client = OpenAI() 
+client.api_key = "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"  # YOUR CHATGPT API KEY 
 
-client_id = "lTmdfvlpxj88X29uUF01kPAfTfeHqcn19LSsXyZ7SFg" # that's for Unsplash API
+# Unsplash API keys
+client_id = "lTmdfvlpxj88X29uUF01kPAfTfeHqcn19LSsXyZ7SFg" 
 client_secret = "6gQ-qkXKxNLVCOAVN_CtF_ePFTPbW1tG-XT8WzEgrE8"
 redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
-downloads_directory = 'YOUR DOWNLOADS DIRECTORY' # YOUR DIRECTORY FOR DOWNLOADED IMAGES FROM UNSPLASH SITE
 
+# Ghost API keys
+ghost_instance_name = 'play_ghost'
+ghost_url = 'https://play-ghost.intra.nocloud.today/'
+AdminAPIKey = '657b47782aa8430001211d38:7e0e47563ec5990ad16de6e6b0989e1c31b000b50dab471c58d190a9f3a431c3'
+ContentAPIKey = '8ea3acabb465323f1224f4b254'
+
+# prompts for LLM
+prompt_text = "generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs"
+prompt_unsplash = 'reduce this sentence to four words' # propmpt for generating query for image search using name of the article
+prompt_tag = 'generate one news category for this news article in one word' # prompt for generating news category
+words_check = ['your', '[', 'lorem']   # forbidden words -> this helps to find articles that don't contain stuff like [author's name], 'lorem ipsum...' etc.
+
+#downloads directory
+downloads_directory = "YOUR DOWNLOADS DIRECTORY"
 
 
 class GhostAdmin():
@@ -27,12 +42,12 @@ class GhostAdmin():
         self.createHeaders()
 
     def setSiteData(self):
-        sites = [{'name': 'play_ghost', 'url': 'YOUR GHOST INSTANCE URL', 'AdminAPIKey': 'YOUR AdminAPIKey', 'ContentAPIKey': 'YOUR ContentAPIKey'}]
+        sites = [{'name': ghost_instance_name, 'url': ghost_url, 'AdminAPIKey': AdminAPIKey, 'ContentAPIKey': ContentAPIKey}]
         self.site = next((site for site in sites if site['name'] == self.siteName), None)
         
         return None
 
-    def createToken(self):
+    def createToken(self): # creating short-lived single-use JSON Web Tokens. The lifespan of a token has a maximum of 5 minute. You can read more about it: https://ghost.org/docs/admin-api/#token-authentication
         key = self.site['AdminAPIKey']
         id, secret = key.split(':')
         iat = int(dt.now().timestamp())
@@ -136,10 +151,9 @@ def unsplash_image_search(query: str):  # sending request for searching picture 
 
 if __name__ == '__main__':
    # GENERATING THE NEWS ARTICLE
-  generated_text = answer_from_AI("generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs")
+  generated_text = answer_from_AI(prompt_text)
   print(f'text: {generated_text[:200]}')
 
-  words_check = ['your', '[', 'lorem']   # this helps to find articles that don't contain stuff like [author's name], 'lorem ipsum...' etc.
   bad_response = False  
 
   if len(generated_text.split()) < 200:             # CHECKING FOR VALID AI RESPONSE
@@ -168,7 +182,7 @@ if __name__ == '__main__':
         print(f"title: {article_name}")
 
         # GENERATING QUERY FOR UNSPLASH API 
-        query = answer_from_AI(f'reduce this sentence to four words {article_name}')
+        query = answer_from_AI(prompt_unsplash + article_name)
         print(f'query for unsplash search: {query}')
 
         photo_id = unsplash_image_search(query)
@@ -178,7 +192,7 @@ if __name__ == '__main__':
         download_image_by_id(photo_id, output_filename)
 
         # GENERATING TAGS 
-        tag = answer_from_AI(f"generate one news category for this news article in one word {generated_body}")
+        tag = answer_from_AI(prompt_tag + generated_body)
         print(f'tag for article: {tag}')
         post_tags = [{'name': tag }]
 
@@ -209,3 +223,4 @@ if __name__ == '__main__':
             error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
             print(error_str)
                
+
