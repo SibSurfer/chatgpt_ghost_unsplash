@@ -9,7 +9,7 @@ import random
 
 # OPENAI keys
 client = OpenAI() 
-client.api_key = "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"  # YOUR CHATGPT API KEY 
+client.api_key = ""  # YOUR CHATGPT API KEY 
 
 # Unsplash API keys
 client_id = "lTmdfvlpxj88X29uUF01kPAfTfeHqcn19LSsXyZ7SFg" 
@@ -19,8 +19,8 @@ redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
 # Ghost API keys
 ghost_instance_name = 'play_ghost'
 ghost_url = 'https://play-ghost.intra.nocloud.today/'
-AdminAPIKey = '657b47782aa8430001211d38:7e0e47563ec5990ad16de6e6b0989e1c31b000b50dab471c58d190a9f3a431c3'
-ContentAPIKey = '8ea3acabb465323f1224f4b254'
+AdminAPIKey = ''
+ContentAPIKey = ''
 
 # prompts for LLM
 prompt_text = "generate one news article in markdown format without images, date or author. it is sufficient to write no more than four paragraphs"
