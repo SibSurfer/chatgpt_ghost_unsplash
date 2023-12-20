@@ -183,7 +183,7 @@ if __name__ == '__main__':
         lines = generated_text.split('\n')
         for line in lines:
             title_idx += 1
-            if line.startswith('# '):        # finding the line with title
+            if line.startswith('#'):        # finding the line with title
                     article_name = line.replace('#', '').replace('*','').replace('Title', '').replace('title', '').strip() # sometimes there are symbols like '#', '*' and 'title' word in article name
                     break
             else:
