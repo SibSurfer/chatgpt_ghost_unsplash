@@ -6,6 +6,8 @@ from io import BytesIO
 from unsplash.api import Api # pip install python-unsplash
 from unsplash.auth import Auth
 import random
+import tempfile
+import os
 
 # OPENAI keys
 client = OpenAI() 
@@ -27,9 +29,6 @@ prompt_text = "generate one news article in markdown format without images, date
 prompt_unsplash = 'reduce this sentence to four words' # propmpt for generating query for image search using name of the article
 prompt_tag = 'generate one news category for this news article in one word' # prompt for generating news category
 words_check = ['your', '[', 'lorem']   # forbidden words -> this helps to find articles that don't contain stuff like [author's name], 'lorem ipsum...' etc.
-
-#downloads directory
-downloads_directory = "YOUR DOWNLOADS DIRECTORY"
 
 
 class GhostAdmin():
@@ -146,6 +145,19 @@ def unsplash_image_search(query: str):  # sending request for searching picture 
     print(res)
 
     return photo_id
+    
+def create_temp_directory(): # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
+    return temp_dir
+
+def delete_all_files_from_temp(temp_dir):
+    try:
+        # Delete all files in the temporary directory
+        for file_name in os.listdir(temp_dir):
+            file_path = os.path.join(temp_dir, file_name)
+            os.remove(file_path)
+    except Exception as e:
+        print(f"An exception occurred: {e}")
 
 
 
@@ -188,7 +200,8 @@ if __name__ == '__main__':
         photo_id = unsplash_image_search(query)
 
         image_name = f'{random.randint(0,999)}.jpg'  # File name to save the downloaded photo
-        output_filename = downloads_directory + image_name
+        temp_dir = create_temp_directory()
+        output_filename = temp_dir + image_name
         download_image_by_id(photo_id, output_filename)
 
         # GENERATING TAGS 
@@ -222,5 +235,6 @@ if __name__ == '__main__':
         if not success and result.status_code < 500:
             error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
             print(error_str)
+        delete_all_files_from_temp(temp_dir)
                
 
