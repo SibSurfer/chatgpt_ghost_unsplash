@@ -1,3 +1,4 @@
+import sys
 from openai import OpenAI # pip install openai
 import requests, json # pip install requests
 import jwt	# pip install pyjwt
@@ -80,7 +81,7 @@ class GhostAdmin():
         params = {'source': 'html'}
         result = requests.post(url, params=params, json={"posts": [content]}, headers=self.headers)
         if result.ok: result = 'success: post created (status_code:'+str(result.status_code)+')'
-        else: result = 'error: post not created (status_code:' + str(result.status_code) + ')' + str(result.reason)
+        else: sys.exit('error: post not created (status_code:' + str(result.status_code) + ')' + str(result.reason))
 
         return result
     
@@ -92,8 +93,7 @@ class GhostAdmin():
             image = BytesIO(imageObject)
             return image
         except Exception as e:
-            print(f"An error while loadImage function occurred: {e}")
-            return None
+            sys.exit(f"An error while loadImage function occurred: {e}")
 
     def imageUpload(self, imageName, imageObject):  # uploading image to ghost
         url = self.site['url'] + 'ghost/api/v3/admin/images/upload/'
@@ -127,9 +127,9 @@ def download_image_by_id(photo_id, filename): # downloading concrete image from 
                 file.write(image_response.content)
             print(f"Image downloaded and saved as {filename}")
         else:
-            print("Failed to download image")
+            sys.exit("Failed to download image")
     else:
-        print("Failed to fetch photo details from Unsplash")
+        sys.exit("Failed to fetch photo details from Unsplash")
 
 def answer_from_AI(query: str):     # sending question to CHATGPT API
     response = client.chat.completions.create(          
@@ -158,8 +158,7 @@ def delete_all_files_from_temp(temp_dir):
             file_path = os.path.join(temp_dir, file_name)
             os.remove(file_path)
     except Exception as e:
-        print(f"An exception occurred: {e}")
-
+        sys.exit(f"An exception occurred: {e}")
 
 
 if __name__ == '__main__':
@@ -170,12 +169,12 @@ if __name__ == '__main__':
   bad_response = False  
 
   if len(generated_text.split()) < min_tokens:             # CHECKING FOR VALID AI RESPONSE
-    print(f'sorry, less than {min_tokens} tokens')
+    sys.exit(f'sorry, very short AI response (less than {min_tokens} symbols)')
   else:
       ignore_case_text = generated_text.lower()
       for word in words_check:
           if word in ignore_case_text:
-              print('sorry, bad AI response, try again')
+              sys.exit(f'sorry, bad AI response (output contains forbidden word: {word}), try again')
               bad_response = True
               break
       if not bad_response:
@@ -216,28 +215,33 @@ if __name__ == '__main__':
             image_object = ga.loadImage(output_filename) # loading image to Ghost
             result = ga.imageUpload(imageName=image_name, imageObject=image_object)
 
-            num_attempts = 0 # checking for result's validity
-            success = False
-            while num_attempts <= 3 and (result.status_code >= 500 or result.ok): # if it is server error, try again 3 times (if response is not error, continue)
-                    num_attempts += 1
-                    if result.ok: 
-                        image_url = json.loads(result.text)['images'][0]['url']  # image_url on Ghost server
-                        result = 'success: ' + image_url
-                        print(result)
-                        img_idx = image_url.find('content')
-                        image_slug = image_url[img_idx:]     # for POST request that creates a post, image URL should be like: content/images/year/month/image.jpg, so we should get rid of other words in URL
-                        create_post = ga.createPost(title=article_name, bodyFormat='markdown', excerpt=excerpt, tags=post_tags,body=generated_body, status='published', featureImage=image_slug)
-                        print(f'create_post result: {create_post}')
-                        success = True
-                        break
-                    else: 
-                        error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
-                        print(error_str + '...trying again..')
-            if not success and result.status_code >= 500:
-                print('I have tryed 3 times, still is not working')
-            if not success and result.status_code < 500:
-                error_str = 'error: image upload failed (' + str(result.status_code) + ')' + str(result.reason) 
-                print(error_str)
+            num_attempts = 0  # checking for result's validity
+
+            while num_attempts <= 3 and (result.status_code >= 500 or result.ok):
+                # if it is server error, try again 3 times (if response is not error, continue)
+                num_attempts += 1
+
+                if result.ok:
+                    image_url = json.loads(result.text)['images'][0]['url']  # image_url on Ghost server
+
+                    img_idx = image_url.find('content')
+                    image_slug = image_url[img_idx:]
+                    # for POST request that creates a post, image URL should be like:
+                    # content/images/year/month/image.jpg, so we should get rid of other words in URL
+
+                    ga.create_post(title=article_name, body_format='markdown', excerpt=excerpt, feature_image=image_slug,
+                                                tags=post_tags, body=generated_body, status='published')
+
+                    delete_all_files_from_temp(temp_dir)
+                    quit()
+                else:
+                    error_str = 'Error: image upload failed (' + str(result.status_code) + ')' + str(result.reason)
+                    print('Trying again..')
+                    result = ga.image_upload(image_name=image_name, image_object=image_object)
+
             delete_all_files_from_temp(temp_dir)
-               
+            if result.status_code >= 500:
+                sys.exit(f'Unsplash server error.')
+            else:
+                sys.exit('Error: image upload failed (' + str(result.status_code) + ')' + str(result.reason))
 
